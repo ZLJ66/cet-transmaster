@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import TextareaAutosize from 'react-textarea-autosize'
-import { ArrowLeft, Pause, Play, Square, Clock, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Pause, Play, Square, Clock, AlertCircle, Layout } from 'lucide-react'
 
 export default function PracticePage() {
   const router = useRouter()
@@ -22,6 +22,7 @@ export default function PracticePage() {
     status,
     timer,
     currentTitle,
+    layout,
     updateUserTranslation,
     nextSentence,
     prevSentence,
@@ -32,6 +33,7 @@ export default function PracticePage() {
     endPractice,
     saveDraft,
     clearDraft,
+    setLayout,
   } = useTransStore()
 
   const { formattedTime, isRunning } = useTimer()
@@ -164,74 +166,42 @@ export default function PracticePage() {
 
       {/* 主内容区 */}
       <div className={`max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-8 ${status === 'paused' ? 'blur-sm' : ''}`}>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
-          {/* 移动端：原文预览可折叠 */}
-          <div className="lg:hidden">
-            <details className="group">
-              <summary className="flex items-center justify-between cursor-pointer list-none">
-                <span className="text-sm font-medium text-slate-500">原文预览</span>
-                <span className="text-xs text-slate-400 group-open:rotate-90 transition-transform">▶</span>
-              </summary>
-              <div className="mt-2 space-y-2">
-                {sentences.map((sentence, index) => (
-                  <div
-                    key={index}
-                    onClick={() => goToSentence(index)}
-                    className={`
-                      p-2 rounded cursor-pointer text-xs
-                      ${index === currentIndex 
-                        ? 'bg-indigo-50 border-l-2 border-indigo-600' 
-                        : index < currentIndex
-                          ? 'bg-green-50 opacity-60'
-                          : 'bg-slate-50'
-                      }
-                    `}
-                  >
-                    <span className="text-slate-500 mr-1">{index + 1}.</span>
-                    {sentence}
-                  </div>
-                ))}
-              </div>
-            </details>
-          </div>
+        {/* 布局切换按钮 */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLayout(layout === 'horizontal' ? 'vertical' : 'horizontal')}
+          >
+            <Layout className="w-4 h-4 mr-2" />
+            {layout === 'horizontal' ? '上下排列' : '左右排列'}
+          </Button>
+        </div>
 
-          {/* 左侧：原文预览区 - PC端 */}
-          <div className="hidden lg:block lg:col-span-3">
+        {/* 左右布局 */}
+        <div className={layout === 'horizontal' ? 'grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6' : 'hidden'}>
+          {/* 原文预览区 - PC端 */}
+          <div className="hidden lg:block lg:col-span-2">
             <Card>
-              <CardContent className="p-6">
-                <h3 className="text-sm font-medium text-slate-500 mb-4">原文预览</h3>
-                <div className="space-y-3">
+              <CardContent className="p-4">
+                <h3 className="text-sm font-medium text-slate-500 mb-3">原文预览</h3>
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                   {sentences.map((sentence, index) => (
                     <div
                       key={index}
                       onClick={() => goToSentence(index)}
                       className={`
-                        p-3 rounded-lg cursor-pointer transition-all
+                        p-2 rounded cursor-pointer transition-all text-xs
                         ${index === currentIndex 
-                          ? 'bg-indigo-50 border-l-4 border-indigo-600' 
+                          ? 'bg-indigo-100 border-l-4 border-indigo-600 shadow-sm scale-[1.02]' 
                           : index < currentIndex
                             ? 'bg-green-50 opacity-60'
                             : 'bg-slate-50 hover:bg-slate-100'
                         }
                       `}
                     >
-                      <div className="flex items-start gap-3">
-                        <span className={`
-                          text-sm font-medium w-6 flex-shrink-0
-                          ${index === currentIndex ? 'text-indigo-600' : 'text-slate-400'}
-                        `}>
-                          {index + 1}.
-                        </span>
-                        <span className={`
-                          text-sm flex-1
-                          ${index === currentIndex ? 'text-slate-900 font-medium' : 'text-slate-600'}
-                        `}>
-                          {sentence}
-                        </span>
-                        {index < currentIndex && userTranslations[index] && (
-                          <span className="text-green-600 text-xs">✓</span>
-                        )}
-                      </div>
+                      <span className="text-slate-500 mr-1">{index + 1}.</span>
+                      <span className={index === currentIndex ? 'font-semibold text-indigo-900' : ''}>{sentence}</span>
                     </div>
                   ))}
                 </div>
@@ -239,8 +209,8 @@ export default function PracticePage() {
             </Card>
           </div>
 
-          {/* 右侧：翻译输入区 */}
-          <div className="lg:col-span-2">
+          {/* 翻译输入区 */}
+          <div className="lg:col-span-3">
             <Card>
               <CardContent className="p-4 sm:p-6">
                 <div className="mb-4">
@@ -248,11 +218,6 @@ export default function PracticePage() {
                   <h3 className="text-base sm:text-lg font-medium text-slate-900 mt-1">
                     {sentences[currentIndex]}
                   </h3>
-                  {referenceTranslations[currentIndex] && (
-                    <p className="text-sm text-slate-400 mt-2">
-                      参考: {referenceTranslations[currentIndex]}
-                    </p>
-                  )}
                 </div>
 
                 <div className="mb-4">
@@ -265,7 +230,7 @@ export default function PracticePage() {
                     onChange={(e) => handleUpdateTranslation(currentIndex, e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="在此输入英文翻译..."
-                    className="w-full min-h-[100px] sm:min-h-[120px] p-3 rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-base"
+                    className="w-full min-h-[150px] sm:min-h-[200px] p-3 rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-base"
                   />
                 </div>
 
@@ -296,6 +261,87 @@ export default function PracticePage() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* 上下布局 */}
+        <div className={layout === 'vertical' ? 'space-y-4' : 'hidden'}>
+          {/* 原文预览 */}
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-sm font-medium text-slate-500 mb-3">原文预览</h3>
+              <div className="max-h-[30vh] overflow-y-auto space-y-2">
+                {sentences.map((sentence, index) => (
+                  <div
+                    key={index}
+                    onClick={() => goToSentence(index)}
+                    className={`
+                      p-2 rounded cursor-pointer transition-all text-sm
+                      ${index === currentIndex 
+                        ? 'bg-indigo-100 border-l-4 border-indigo-600 shadow-sm scale-[1.02]' 
+                        : index < currentIndex
+                          ? 'bg-green-50 opacity-60'
+                          : 'bg-slate-50 hover:bg-slate-100'
+                      }
+                    `}
+                  >
+                    <span className="text-slate-500 mr-1">{index + 1}.</span>
+                    <span className={index === currentIndex ? 'font-semibold text-indigo-900' : ''}>{sentence}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 当前句子 */}
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="mb-4">
+                <span className="text-sm text-slate-500">当前句子</span>
+                <h3 className="text-lg sm:text-xl font-medium text-slate-900 mt-1">
+                  {sentences[currentIndex]}
+                </h3>
+              </div>
+
+              <div className="mb-4">
+                <label className="text-sm font-medium text-slate-700 mb-2 block">
+                  请输入翻译
+                </label>
+                <TextareaAutosize
+                  ref={textareaRef}
+                  value={userTranslations[currentIndex]}
+                  onChange={(e) => handleUpdateTranslation(currentIndex, e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="在此输入英文翻译..."
+                  className="w-full min-h-[180px] sm:min-h-[200px] p-3 rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-base"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevSentence}
+                  disabled={currentIndex === 0}
+                >
+                  上一句
+                </Button>
+                
+                <span className="text-xs sm:text-sm text-slate-500">
+                  Enter 下一句
+                </span>
+                
+                {currentIndex < sentences.length - 1 ? (
+                  <Button size="sm" onClick={nextSentence}>
+                    下一句
+                  </Button>
+                ) : (
+                  <Button variant="primary" onClick={handleSubmit}>
+                    提交分析
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

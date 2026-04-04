@@ -10,27 +10,75 @@ interface AnalyzeRequest {
   referenceTranslations: string[]
 }
 
-const SYSTEM_PROMPT = `你是一位专业的四六级英语老师。请对比用户译文与标准译文。
+const KNOWLEDGE_BASE = `
+## 翻译技巧核心知识
 
-请对每句话进行分析，输出 JSON 格式数组：
-[
-  {
-    "sentenceIndex": 0,
-    "score": 85,
-    "errors": [
-      {
-        "original": "错误的表达",
-        "suggestion": "正确的表达",
-        "reason": "错误原因说明"
-      }
-    ],
-    "polish": "更地道的表达建议",
-    "comment": "总体评价"
-  }
-]
+### 七大翻译策略
+1. 确立主干 - 识别并构建句子核心结构（主语+谓语）
+2. 语序调整 - 定语/状语位置调整、叙事重心调整
+3. 正反表达转换 - 汉语正说英语反译、汉语反说英语正译
+4. 语态转换 - 主动↔被动灵活转换
+5. 句式重构 - 增词法、减词法、分译与合译
+6. 词类转换 - 名↔动、动↔名、形↔副转换
+
+### 高频句式（必须掌握）
+- "not only…, but also…"（最重要，39次）
+- "especially for…"（23次）
+- "A enjoys great popularity"（受欢迎）
+- "It is one of the + 最高级"（最...之一）
+- "has a history of…years"（有...年历史）
+- "Since ancient times, …"（自古以来）
+- "With the rapid development of…"（随着...发展）
+- "the+比较级+…, the+比较级"（越...越...）
+- "倍数词+as+形容词+as"（是...的几倍）
+
+### 翻译方法论
+- 套用模板法：优先匹配高频句式
+- 避免直译：意译或功能对等
+- 灵活连接：使用逻辑连接词增强连贯性
+- 语境适配：根据话题选择恰当词汇风格
+`
+
+const SYSTEM_PROMPT = `你是一位专业的四六级英语老师，擅长四六级及专业四八级考试翻译指导。
+
+## 学习资料
+${KNOWLEDGE_BASE}
+
+## 任务要求
+请对比用户译文与参考译文（如果有），根据上述翻译技巧和句式知识进行分析。
+
+请输出 JSON 格式的分析结果：
+{
+  "overallScore": 85,
+  "overallComment": "总体评价",
+  "sentenceAnalyses": [
+    {
+      "sentenceIndex": 0,
+      "originalSentence": "中文原句",
+      "userTranslation": "用户翻译",
+      "referenceTranslation": "参考翻译（如果有）",
+      "score": 85,
+      "errors": [
+        {
+          "original": "错误的表达",
+          "suggestion": "正确的表达",
+          "reason": "错误原因说明"
+        }
+      ],
+      "polish": [
+        "进阶表达建议1",
+        "进阶表达建议2",
+        "进阶表达建议3"
+      ],
+      "comment": "该句评价"
+    }
+  ]
+}
+
+**重要**：polish 字段必须是数组，包含 3-5 条进阶表达建议。如果句子比较简单，可以只提供 1-2 条。每条建议必须是**不同的表达方式**，使用不同的词汇、句式或短语，避免重复。
 
 评分标准：
-- 100分：完全正确，地道表达
+- 100分：完全正确，地道表达，恰当使用高频句式
 - 90-99分：基本正确，有小错误或可以改进的地方
 - 80-89分：有一些语法错误或用词不当
 - 70-79分：有多处语法错误或表达不够准确
@@ -51,14 +99,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userMessages = sentences.map((sentence, index) => {
-      const userTranslation = userTranslations[index] || ''
-      const reference = referenceTranslations[index] || ''
-      
-      return `原句: ${sentence}
-你的译文: ${userTranslation}
-${reference ? `参考译文: ${reference}` : ''}`
-    }).join('\n\n')
+    const userFullTranslation = userTranslations.join('\n')
+    const referenceFull = referenceTranslations[0] || ''
+    const sentencesText = sentences.join('\n')
+    
+    const userMessages = `中文原文:
+${sentencesText}
+
+用户完整译文:
+${userFullTranslation}
+${referenceFull ? `\n参考译文:\n${referenceFull}` : ''}`
 
     const requestBody: Record<string, unknown> = {
       model,
@@ -70,7 +120,7 @@ ${reference ? `参考译文: ${reference}` : ''}`
     }
 
     let url = ''
-    let headers: Record<string, string> = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
 
@@ -163,10 +213,10 @@ ${reference ? `参考译文: ${reference}` : ''}`
         content = data.choices?.[0]?.message?.content || ''
       }
 
-      const jsonMatch = content.match(/\[[\s\S]*\]/)
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
-        const results = JSON.parse(jsonMatch[0])
-        return NextResponse.json({ results })
+        const result = JSON.parse(jsonMatch[0])
+        return NextResponse.json(result)
       } else {
         return NextResponse.json(
           { error: '无法解析 AI 返回的内容' },

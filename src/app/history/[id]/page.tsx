@@ -16,7 +16,7 @@ interface SentenceAnalysis {
     suggestion: string
     reason: string
   }>
-  polish: string
+  polish: string[]
   comment: string
 }
 
@@ -181,14 +181,16 @@ export default function HistoryDetailPage() {
                     </div>
                   )}
 
-                  {result && result.polish && (
+                  {result && result.polish && result.polish.length > 0 && (
                     <div>
                       <p className="text-sm font-medium text-indigo-600 mb-2">
                         <Sparkles className="w-4 h-4 inline mr-1" />
                         进阶表达建议
                       </p>
-                      <div className="bg-indigo-50 border border-indigo-100 p-3 rounded">
-                        <p className="text-sm text-indigo-900">{result.polish}</p>
+                      <div className="bg-indigo-50 border border-indigo-100 p-3 rounded space-y-2">
+                        {result.polish.map((p, idx) => (
+                          <p key={idx} className="text-sm text-indigo-900">{idx + 1}. {p}</p>
+                        ))}
                       </div>
                     </div>
                   )}

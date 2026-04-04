@@ -39,7 +39,7 @@ export interface AnalysisResult {
     suggestion: string
     reason: string
   }>
-  polish: string
+  polish: string[]
 }
 
 export type Status = 'idle' | 'setup' | 'training' | 'paused' | 'analyzing' | 'completed'
@@ -66,6 +66,7 @@ interface TransState {
   
   // 设置
   currentTitle: string
+  layout: 'horizontal' | 'vertical'
   
   // Actions
   setStatus: (status: Status) => void
@@ -86,6 +87,7 @@ interface TransState {
   
   // 历史记录
   addHistory: (item: Omit<HistoryItem, 'id'>) => void
+  deleteHistory: (id: string) => void
   clearHistory: () => void
   
   // 草稿
@@ -102,6 +104,9 @@ interface TransState {
   
   // 标题
   setCurrentTitle: (title: string) => void
+  
+  // 布局
+  setLayout: (layout: 'horizontal' | 'vertical') => void
 }
 
 const initialApiConfig: ApiConfig = {
@@ -125,6 +130,7 @@ export const useTransStore = create<TransState>()(
       history: [],
       draft: null,
       currentTitle: '',
+      layout: 'horizontal',
 
       // Actions
       setStatus: (status) => set({ status }),
@@ -224,6 +230,8 @@ export const useTransStore = create<TransState>()(
       }),
       
       setCurrentTitle: (title) => set({ currentTitle: title }),
+      
+      setLayout: (layout) => set({ layout }),
     }),
     {
       name: 'cet-transmaster-storage',
@@ -231,6 +239,7 @@ export const useTransStore = create<TransState>()(
         apiConfig: state.apiConfig,
         history: state.history,
         draft: state.draft,
+        layout: state.layout,
       }),
     }
   )

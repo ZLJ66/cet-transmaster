@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ArrowRight, ArrowLeft, Plus, Minus, Edit2 } from 'lucide-react'
 
-function splitText(text: string): string[] {
+function splitChineseText(text: string): string[] {
   if (!text.trim()) return []
   const sentences = text.split(/([。？！\n])/)
   const result: string[] = []
@@ -42,7 +42,7 @@ export default function SetupPage() {
   const [editText, setEditText] = useState('')
 
   const handleSplit = () => {
-    const sentences = splitText(sourceText)
+    const sentences = splitChineseText(sourceText)
     setSplitSentences(sentences)
   }
 
@@ -57,7 +57,7 @@ export default function SetupPage() {
 
   const handleResplit = (index: number) => {
     const newSentences = [...splitSentences]
-    const parts = splitText(newSentences[index])
+    const parts = splitChineseText(newSentences[index])
     if (parts.length > 1) {
       newSentences.splice(index, 1, ...parts)
       setSplitSentences(newSentences)
@@ -82,14 +82,13 @@ export default function SetupPage() {
   const handleStartPractice = () => {
     setCurrentTitle(title || '未命名练习')
     setSentences(splitSentences)
-    const refTranslations = referenceText ? splitText(referenceText) : []
-    setReferenceTranslations(refTranslations)
+    setReferenceTranslations(referenceText ? [referenceText] : [])
     setStatus('training')
     router.push('/practice')
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+    <div className="max-w-6xl mx-auto px-8 py-6 sm:px-8 sm:py-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2 sm:gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
@@ -109,7 +108,7 @@ export default function SetupPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8 mb-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-base sm:text-lg">中文原文（必填）</CardTitle>

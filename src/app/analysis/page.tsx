@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTransStore, AnalysisResult, HistoryItem } from '@/store/useTransStore'
+import { useTransStore, HistoryItem } from '@/store/useTransStore'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -10,14 +10,23 @@ import { ArrowLeft, RefreshCw, Clock, Trophy, AlertCircle, CheckCircle, Sparkles
 
 interface SentenceAnalysis {
   sentenceIndex: number
+  originalSentence: string
+  userTranslation: string
+  referenceTranslation?: string
   score: number
   errors: Array<{
     original: string
     suggestion: string
     reason: string
   }>
-  polish: string
+  polish: string[]
   comment: string
+}
+
+interface AnalysisResponse {
+  overallScore: number
+  overallComment: string
+  sentenceAnalyses: SentenceAnalysis[]
 }
 
 export default function AnalysisPage() {
@@ -25,8 +34,8 @@ export default function AnalysisPage() {
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [results, setResults] = useState<SentenceAnalysis[]>([])
-  const [analyzed, setAnalyzed] = useState(false)
+  const [results, setResults] = useState<AnalysisResponse | null>(null)
+  const analyzedRef = useRef(false)
 
   const {
     sentences,
@@ -42,15 +51,18 @@ export default function AnalysisPage() {
   } = useTransStore()
 
   useEffect(() => {
-    if (status !== 'completed' || sentences.length === 0 || analyzed) {
+    if (status !== 'completed' || sentences.length === 0) {
       if (status !== 'completed' && sentences.length > 0) {
         router.push('/setup')
       }
       return
     }
-    setAnalyzed(true)
+    
+    if (analyzedRef.current) return
+    
+    analyzedRef.current = true
     analyzeTranslations()
-  }, [status])
+  }, [status, sentences.length, router])
 
   const analyzeTranslations = async () => {
     setAnalyzing(true)
@@ -79,21 +91,17 @@ export default function AnalysisPage() {
         throw new Error(data.error || '分析失败')
       }
 
-      setResults(data.results)
+      setResults(data)
       
-      const avgScore = Math.round(
-        data.results.reduce((acc: number, r: SentenceAnalysis) => acc + r.score, 0) / data.results.length
-      )
-
       const historyItem: Omit<HistoryItem, 'id'> = {
         date: new Date().toLocaleDateString('zh-CN'),
         title: currentTitle || '未命名练习',
         totalTime: timer,
-        score: avgScore,
+        score: data.overallScore,
         sentences,
         userTranslations,
         referenceTranslations,
-        analysis: data.results,
+        analysis: data.sentenceAnalyses,
       }
       addHistory(historyItem)
     } catch (err) {
@@ -104,9 +112,7 @@ export default function AnalysisPage() {
     }
   }
 
-  const averageScore = results.length > 0
-    ? Math.round(results.reduce((acc, r) => acc + r.score, 0) / results.length)
-    : 0
+  const averageScore = results?.overallScore ?? 0
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -227,7 +233,7 @@ export default function AnalysisPage() {
         <div className="space-y-6">
           <h2 className="text-xl font-semibold text-slate-900">详细分析</h2>
           
-          {results.map((result, index) => (
+          {results?.sentenceAnalyses.map((result, index) => (
             <Card key={index}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -242,21 +248,21 @@ export default function AnalysisPage() {
                     {result.score}分
                   </div>
                 </div>
-                <p className="text-sm text-slate-500">{sentences[index]}</p>
+                <p className="text-sm text-slate-500">{result.originalSentence}</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <p className="text-sm font-medium text-slate-700 mb-1">你的译文</p>
                   <p className="text-slate-900 bg-slate-50 p-3 rounded">
-                    {userTranslations[index] || '(未翻译)'}
+                    {result.userTranslation || '(未翻译)'}
                   </p>
                 </div>
 
-                {referenceTranslations[index] && (
+                {result.referenceTranslation && (
                   <div>
                     <p className="text-sm font-medium text-slate-700 mb-1">参考译文</p>
                     <p className="text-slate-600 bg-slate-50 p-3 rounded">
-                      {referenceTranslations[index]}
+                      {result.referenceTranslation}
                     </p>
                   </div>
                 )}
@@ -265,17 +271,17 @@ export default function AnalysisPage() {
                   <div>
                     <p className="text-sm font-medium text-red-600 mb-2">错误诊断</p>
                     <div className="space-y-2">
-                      {result.errors.map((error, errIndex) => (
+                      {result.errors.map((err, errIndex) => (
                         <div key={errIndex} className="bg-red-50 border border-red-100 p-3 rounded">
                           <div className="flex items-start gap-2">
                             <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
                             <div>
                               <p className="text-sm">
-                                <span className="line-through text-red-500">{error.original}</span>
+                                <span className="line-through text-red-500">{err.original}</span>
                                 {' → '}
-                                <span className="text-green-600 font-medium">{error.suggestion}</span>
+                                <span className="text-green-600 font-medium">{err.suggestion}</span>
                               </p>
-                              <p className="text-xs text-slate-500 mt-1">{error.reason}</p>
+                              <p className="text-xs text-slate-500 mt-1">{err.reason}</p>
                             </div>
                           </div>
                         </div>
@@ -284,14 +290,16 @@ export default function AnalysisPage() {
                   </div>
                 )}
 
-                {result.polish && (
+                {result.polish && result.polish.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-indigo-600 mb-2">
                       <Sparkles className="w-4 h-4 inline mr-1" />
                       进阶表达建议
                     </p>
-                    <div className="bg-indigo-50 border border-indigo-100 p-3 rounded">
-                      <p className="text-sm text-indigo-900">{result.polish}</p>
+                    <div className="bg-indigo-50 border border-indigo-100 p-3 rounded space-y-2">
+                      {result.polish.map((p, idx) => (
+                        <p key={idx} className="text-sm text-indigo-900">{idx + 1}. {p}</p>
+                      ))}
                     </div>
                   </div>
                 )}
