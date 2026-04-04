@@ -1,3 +1,0 @@
-name = "cet-transmaster-ai"
-main = "workers/ai-analyze/index.ts"
-compatibility_date = "2024-01-01"
