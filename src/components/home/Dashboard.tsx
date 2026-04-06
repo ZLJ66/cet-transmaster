@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useTransStore } from '@/store/useTransStore'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Clock, FileText, BarChart3, Trash2 } from 'lucide-react'
+import { Plus, Clock, FileText, BarChart3, Trash2, AlertTriangle } from 'lucide-react'
 
 export function Dashboard() {
   const router = useRouter()
-  const { history, deleteHistory } = useTransStore()
+  const { history, deleteHistory, apiConfig } = useTransStore()
+
+  const hasApiKey = !!apiConfig.apiKey
 
   const totalPractice = history.length
   const averageTime = history.length > 0
@@ -27,6 +29,18 @@ export function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
+      {!hasApiKey && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-amber-800 font-medium">请先配置 AI API Key</p>
+            <p className="text-amber-700 text-sm mt-1">
+              点击右上角「API 设置」配置 AI 服务商，否则无法使用 AI 分析功能。
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h2 className="text-2xl font-semibold text-slate-900 mb-2">
           欢迎回来，今天准备练一篇吗？
@@ -81,12 +95,12 @@ export function Dashboard() {
 
       {/* 开始练习按钮 */}
       <div className="flex justify-center mb-12">
-        <Button variant="primary" size="lg" asChild>
-          <Link href="/setup">
+        <Link href="/setup">
+          <Button variant="primary" size="lg">
             <Plus className="w-5 h-5 mr-2" />
             开始练习
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       {/* 历史记录 */}

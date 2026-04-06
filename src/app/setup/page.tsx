@@ -121,8 +121,7 @@ export default function SetupPage() {
               className="min-h-[150px] sm:min-h-[200px]"
             />
             <Button 
-              variant="outline" 
-              className="mt-4 w-full sm:w-auto"
+              className="mt-4 w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6"
               onClick={handleSplit}
               disabled={!sourceText.trim()}
             >

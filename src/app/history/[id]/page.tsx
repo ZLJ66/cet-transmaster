@@ -10,6 +10,9 @@ import { ArrowLeft, Clock, Trophy, AlertCircle, CheckCircle, Sparkles, FileText 
 
 interface SentenceAnalysis {
   sentenceIndex: number
+  originalSentence: string
+  userTranslation: string
+  referenceTranslation?: string
   score: number
   errors: Array<{
     original: string
@@ -149,11 +152,11 @@ export default function HistoryDetailPage() {
                     </p>
                   </div>
 
-                  {refTranslation && (
+                  {result?.referenceTranslation && (
                     <div>
                       <p className="text-sm font-medium text-slate-700 mb-1">参考译文</p>
                       <p className="text-slate-600 bg-slate-50 p-3 rounded">
-                        {refTranslation}
+                        {result.referenceTranslation}
                       </p>
                     </div>
                   )}
