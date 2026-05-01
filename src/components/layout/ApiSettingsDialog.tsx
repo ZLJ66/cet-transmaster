@@ -22,7 +22,10 @@ import {
 } from '@/components/ui/select'
 import { useTransStore, Provider } from '@/store/useTransStore'
 
+const DEFAULT_API_KEY = 'sk-6380e65353684772afd91470517b3130'
+
 const PROVIDERS: { value: Provider; label: string; defaultModel: string; baseUrl?: string }[] = [
+  { value: 'default', label: '默认', defaultModel: 'deepseek-chat', baseUrl: 'https://api.deepseek.com' },
   { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-4o' },
   { value: 'deepseek', label: 'DeepSeek', defaultModel: 'deepseek-chat', baseUrl: 'https://api.deepseek.com' },
   { value: 'gemini', label: 'Google Gemini', defaultModel: 'gemini-2.0-flash' },
@@ -49,19 +52,30 @@ export function ApiSettingsDialog() {
     const providerInfo = PROVIDERS.find(p => p.value === provider)
     setLocalConfig({
       provider,
-      apiKey: '',
+      apiKey: provider === 'default' ? DEFAULT_API_KEY : '',
       model: providerInfo?.defaultModel || '',
       baseUrl: providerInfo?.baseUrl || '',
     })
   }
 
-  const showBaseUrl = localConfig.provider === 'openai' || 
-                      localConfig.provider === 'custom' || 
-                      localConfig.provider === 'ollama' ||
-                      localConfig.provider === 'anthropic'
+const showBaseUrl = localConfig.provider === 'openai' || 
+                        localConfig.provider === 'custom' || 
+                        localConfig.provider === 'ollama' ||
+                        localConfig.provider === 'anthropic'
+
+  const isDefault = localConfig.provider === 'default'
 
   const handleSave = () => {
-    setApiConfig(localConfig)
+    if (isDefault) {
+      setApiConfig({
+        provider: 'default',
+        apiKey: DEFAULT_API_KEY,
+        model: 'deepseek-chat',
+        baseUrl: 'https://api.deepseek.com',
+      })
+    } else {
+      setApiConfig(localConfig)
+    }
     setOpen(false)
   }
 
@@ -102,40 +116,44 @@ export function ApiSettingsDialog() {
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="apiKey">API Key</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="apiKey"
-                  type={showKey ? 'text' : 'password'}
-                  value={localConfig.apiKey}
-                  onChange={(e) => setLocalConfig({ ...localConfig, apiKey: e.target.value })}
-                  placeholder={selectedProvider?.baseUrl ? `在 ${selectedProvider.label} 获取` : '输入 API Key'}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowKey(!showKey)}
-                >
-                  {showKey ? '隐藏' : '显示'}
-                </Button>
+            {!isDefault && (
+              <div className="grid gap-2">
+                <Label htmlFor="apiKey">API Key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="apiKey"
+                    type={showKey ? 'text' : 'password'}
+                    value={localConfig.apiKey}
+                    onChange={(e) => setLocalConfig({ ...localConfig, apiKey: e.target.value })}
+                    placeholder={selectedProvider?.baseUrl ? `在 ${selectedProvider.label} 获取` : '输入 API Key'}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowKey(!showKey)}
+                  >
+                    {showKey ? '隐藏' : '显示'}
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="grid gap-2">
-              <Label htmlFor="model">模型</Label>
-              <Input
-                id="model"
-                value={localConfig.model}
-                onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
-                placeholder="输入模型名称"
-              />
-              <p className="text-xs text-slate-500">
-                例如: {selectedProvider?.defaultModel}
-              </p>
-            </div>
+            {!isDefault && (
+              <div className="grid gap-2">
+                <Label htmlFor="model">模型</Label>
+                <Input
+                  id="model"
+                  value={localConfig.model}
+                  onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
+                  placeholder="输入模型名称"
+                />
+                <p className="text-xs text-slate-500">
+                  例如: {selectedProvider?.defaultModel}
+                </p>
+              </div>
+            )}
 
             {showBaseUrl && (
               <div className="grid gap-2">

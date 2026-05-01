@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type Provider = 'openai' | 'deepseek' | 'gemini' | 'zhipu' | 'minimax' | 'qwen' | 'anthropic' | 'ollama' | 'custom'
+export type Provider = 'default' | 'openai' | 'deepseek' | 'gemini' | 'zhipu' | 'minimax' | 'qwen' | 'anthropic' | 'ollama' | 'custom'
 
 export interface ApiConfig {
   provider: Provider
@@ -93,6 +93,7 @@ interface TransState {
   // 草稿
   saveDraft: () => void
   loadDraft: () => Draft | null
+  loadDraftToState: () => void
   clearDraft: () => void
   
   // 练习控制
@@ -109,11 +110,13 @@ interface TransState {
   setLayout: (layout: 'horizontal' | 'vertical') => void
 }
 
+const DEFAULT_API_KEY = 'sk-6380e65353684772afd91470517b3130'
+
 const initialApiConfig: ApiConfig = {
-  provider: 'openai',
-  apiKey: '',
-  model: 'gpt-4o',
-  baseUrl: '',
+  provider: 'default',
+  apiKey: DEFAULT_API_KEY,
+  model: 'deepseek-chat',
+  baseUrl: 'https://api.deepseek.com',
 }
 
 export const useTransStore = create<TransState>()(
@@ -202,6 +205,21 @@ export const useTransStore = create<TransState>()(
       loadDraft: () => {
         const state = get()
         return state.draft
+      },
+      
+      loadDraftToState: () => {
+        const state = get()
+        if (state.draft) {
+          set({
+            sentences: state.draft.sentences,
+            userTranslations: state.draft.userTranslations,
+            referenceTranslations: state.draft.referenceTranslations,
+            currentIndex: state.draft.currentIndex,
+            timer: state.draft.timer,
+            currentTitle: state.draft.currentTitle,
+            status: state.draft.status,
+          })
+        }
       },
       
       clearDraft: () => set({ draft: null }),

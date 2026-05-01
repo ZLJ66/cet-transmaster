@@ -75,7 +75,7 @@ ${KNOWLEDGE_BASE}
   ]
 }
 
-**重要**：polish 字段必须是数组，包含 3-5 条进阶表达建议。如果句子比较简单，可以只提供 1-2 条。每条建议必须是**不同的表达方式**，使用不同的词汇、句式或短语，避免重复。
+**重要**：polish 字段必须是数组，包含 3-5 条进阶表达建议，**必须是完整的句子**（带有主语和谓语）。如果句子比较简单，可以只提供 1-2 条。尽量用**不同的表达方式**，使用不同的词汇、句式或短语，避免重复。
 
 评分标准：
 - 100分：完全正确，地道表达，恰当使用高频句式
@@ -125,12 +125,13 @@ ${referenceFull ? `\n参考译文:\n${referenceFull}` : ''}`
     }
 
     switch (provider) {
-      case 'openai':
-        url = (baseUrl || 'https://api.openai.com/v1') + '/chat/completions'
-        headers['Authorization'] = `Bearer ${apiKey}`
-        break
+      case 'default':
       case 'deepseek':
         url = (baseUrl || 'https://api.deepseek.com/v1') + '/chat/completions'
+        headers['Authorization'] = `Bearer ${apiKey}`
+        break
+      case 'openai':
+        url = (baseUrl || 'https://api.openai.com/v1') + '/chat/completions'
         headers['Authorization'] = `Bearer ${apiKey}`
         break
       case 'gemini':

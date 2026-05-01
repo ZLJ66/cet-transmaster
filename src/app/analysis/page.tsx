@@ -314,31 +314,6 @@ export default function AnalysisPage() {
             </Card>
           ))}
 
-          {/* 词汇总结 */}
-          {results?.sentenceAnalyses && results.sentenceAnalyses.length > 0 && (
-            <Card className="mt-8 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-600" />
-                  本次练习词汇总结
-                </CardTitle>
-                <p className="text-sm text-slate-600">以下是在这次练习中出现的地道表达，建议收藏学习</p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {results.sentenceAnalyses
-                    .flatMap(s => s.polish || [])
-                    .filter((v, i, a) => a.indexOf(v) === i)
-                    .slice(0, 10)
-                    .map((phrase, idx) => (
-                      <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-indigo-100">
-                        <p className="text-sm font-medium text-indigo-900">{phrase}</p>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
