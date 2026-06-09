@@ -1,14 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTransStore } from '@/store/useTransStore'
 import { useTimer } from '@/hooks/useTimer'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
 import TextareaAutosize from 'react-textarea-autosize'
-import { ArrowLeft, Pause, Play, Square, Clock, AlertCircle, Layout } from 'lucide-react'
+import { ArrowLeft, Pause, Play, Square, Clock, AlertCircle, Layout, Minus, Plus, Edit2 } from 'lucide-react'
 
 export default function PracticePage() {
   const router = useRouter()
@@ -34,7 +35,13 @@ export default function PracticePage() {
     saveDraft,
     clearDraft,
     setLayout,
+    mergeSentences,
+    splitSentence,
+    editSentence,
   } = useTransStore()
+
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editText, setEditText] = useState('')
 
   const { formattedTime, isRunning } = useTimer()
 
@@ -101,6 +108,29 @@ export default function PracticePage() {
     } else if (status === 'paused') {
       resumePractice()
     }
+  }
+
+  const handleEdit = (index: number) => {
+    setEditingIndex(index)
+    setEditText(sentences[index])
+  }
+
+  const handleSaveEdit = () => {
+    if (editingIndex !== null) {
+      editSentence(editingIndex, editText)
+      setEditingIndex(null)
+      setEditText('')
+    }
+  }
+
+  const handleMerge = (index: number) => {
+    mergeSentences(index)
+    saveDraft()
+  }
+
+  const handleSplit = (index: number) => {
+    splitSentence(index)
+    saveDraft()
   }
 
   const progress = ((currentIndex + 1) / sentences.length) * 100
@@ -189,19 +219,70 @@ export default function PracticePage() {
                   {sentences.map((sentence, index) => (
                     <div
                       key={index}
-                      onClick={() => goToSentence(index)}
                       className={`
-                        p-2 rounded cursor-pointer transition-all text-xs
-                        ${index === currentIndex 
-                          ? 'bg-indigo-100 border-l-4 border-indigo-600 shadow-sm scale-[1.02]' 
+                        p-2 rounded transition-all text-xs group
+                        ${index === currentIndex
+                          ? 'bg-indigo-100 border-l-4 border-indigo-600 shadow-sm scale-[1.02]'
                           : index < currentIndex
                             ? 'bg-green-50 opacity-60'
                             : 'bg-slate-50 hover:bg-slate-100'
                         }
                       `}
                     >
-                      <span className="text-slate-500 mr-1">{index + 1}.</span>
-                      <span className={index === currentIndex ? 'font-semibold text-indigo-900' : ''}>{sentence}</span>
+                      {editingIndex === index ? (
+                        <div className="flex gap-1">
+                          <Input
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            className="flex-1 min-w-0 h-6 text-xs"
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleSaveEdit} className="h-6 px-2">
+                            保存
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingIndex(null)} className="h-6 px-2">
+                            取消
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => goToSentence(index)}
+                          className="cursor-pointer"
+                        >
+                          <span className="text-slate-500 mr-1">{index + 1}.</span>
+                          <span className={index === currentIndex ? 'font-semibold text-indigo-900' : ''}>{sentence}</span>
+                          <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => { e.stopPropagation(); handleEdit(index); }}
+                              className="h-5 px-1"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                            {index < sentences.length - 1 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => { e.stopPropagation(); handleMerge(index); }}
+                                title="与下一句合并"
+                                className="h-5 px-1"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => { e.stopPropagation(); handleSplit(index); }}
+                              title="拆分句子"
+                              className="h-5 px-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -273,19 +354,73 @@ export default function PracticePage() {
                 {sentences.map((sentence, index) => (
                   <div
                     key={index}
-                    onClick={() => goToSentence(index)}
                     className={`
-                      p-2 rounded cursor-pointer transition-all text-sm
-                      ${index === currentIndex 
-                        ? 'bg-indigo-100 border-l-4 border-indigo-600 shadow-sm scale-[1.02]' 
+                      p-2 rounded transition-all text-sm group
+                      ${index === currentIndex
+                        ? 'bg-indigo-100 border-l-4 border-indigo-600 shadow-sm scale-[1.02]'
                         : index < currentIndex
                           ? 'bg-green-50 opacity-60'
                           : 'bg-slate-50 hover:bg-slate-100'
                       }
                     `}
                   >
-                    <span className="text-slate-500 mr-1">{index + 1}.</span>
-                    <span className={index === currentIndex ? 'font-semibold text-indigo-900' : ''}>{sentence}</span>
+                    {editingIndex === index ? (
+                      <div className="flex gap-2">
+                        <Input
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="flex-1 min-w-0 h-8 text-sm"
+                          autoFocus
+                        />
+                        <Button size="sm" onClick={handleSaveEdit} className="h-8">
+                          保存
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingIndex(null)} className="h-8">
+                          取消
+                        </Button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => goToSentence(index)}
+                        className="cursor-pointer"
+                      >
+                        <span className="text-slate-500 mr-1">{index + 1}.</span>
+                        <span className={index === currentIndex ? 'font-semibold text-indigo-900' : ''}>{sentence}</span>
+                        <div className="flex gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => { e.stopPropagation(); handleEdit(index); }}
+                            className="h-6 px-2"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            编辑
+                          </Button>
+                          {index < sentences.length - 1 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => { e.stopPropagation(); handleMerge(index); }}
+                              title="与下一句合并"
+                              className="h-6 px-2"
+                            >
+                              <Minus className="w-3 h-3 mr-1" />
+                              合并
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => { e.stopPropagation(); handleSplit(index); }}
+                            title="拆分句子"
+                            className="h-6 px-2"
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            拆分
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

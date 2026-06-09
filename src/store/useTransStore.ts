@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type Provider = 'default' | 'openai' | 'deepseek' | 'gemini' | 'zhipu' | 'minimax' | 'qwen' | 'anthropic' | 'ollama' | 'custom'
+export type Provider = 'default' | 'openai' | 'deepseek' | 'gemini' | 'zhipu' | 'minimax' | 'qwen' | 'anthropic' | 'xiaomi' | 'ollama' | 'custom'
 
 export interface ApiConfig {
   provider: Provider
@@ -102,12 +102,17 @@ interface TransState {
   resumePractice: () => void
   endPractice: () => void
   reset: () => void
-  
+
   // 标题
   setCurrentTitle: (title: string) => void
-  
+
   // 布局
   setLayout: (layout: 'horizontal' | 'vertical') => void
+
+  // 句子操作
+  mergeSentences: (index: number) => void
+  splitSentence: (index: number) => void
+  editSentence: (index: number, newSentence: string) => void
 }
 
 const DEFAULT_API_KEY = 'sk-6380e65353684772afd91470517b3130'
@@ -248,8 +253,69 @@ export const useTransStore = create<TransState>()(
       }),
       
       setCurrentTitle: (title) => set({ currentTitle: title }),
-      
+
       setLayout: (layout) => set({ layout }),
+
+      mergeSentences: (index) => set((state) => {
+        if (index >= state.sentences.length - 1) return state
+        const newSentences = [...state.sentences]
+        newSentences[index] = newSentences[index] + newSentences[index + 1]
+        newSentences.splice(index + 1, 1)
+        const newTranslations = [...state.userTranslations]
+        newTranslations[index] = newTranslations[index] + newTranslations[index + 1]
+        newTranslations.splice(index + 1, 1)
+        return {
+          sentences: newSentences,
+          userTranslations: newTranslations,
+          currentIndex: Math.min(state.currentIndex, newSentences.length - 1)
+        }
+      }),
+
+      splitSentence: (index) => set((state) => {
+        const sentence = state.sentences[index]
+        const parts = sentence.split(/([。？！])/)
+        const newSentences: string[] = []
+        const newTranslations: string[] = []
+        let currentSentence = ''
+        let currentTranslation = state.userTranslations[index] || ''
+
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i]
+          if (part === '。' || part === '！' || part === '？') {
+            currentSentence += part
+            if (currentSentence.trim()) {
+              newSentences.push(currentSentence.trim())
+              newTranslations.push(i === parts.length - 1 ? currentTranslation : '')
+            }
+            currentSentence = ''
+          } else {
+            currentSentence += part
+          }
+        }
+        if (currentSentence.trim()) {
+          newSentences.push(currentSentence.trim())
+          newTranslations.push('')
+        }
+
+        if (newSentences.length <= 1) return state
+
+        const newAllSentences = [...state.sentences]
+        newAllSentences.splice(index, 1, ...newSentences)
+        const newAllTranslations = [...state.userTranslations]
+        newAllTranslations.splice(index, 1, ...newTranslations)
+
+        return {
+          sentences: newAllSentences,
+          userTranslations: newAllTranslations,
+          currentIndex: Math.min(state.currentIndex, newAllSentences.length - 1)
+        }
+      }),
+
+      editSentence: (index, newSentence) => set((state) => {
+        const newSentences = [...state.sentences]
+        newSentences[index] = newSentence
+        return { sentences: newSentences }
+      }),
     }),
     {
       name: 'cet-transmaster-storage',

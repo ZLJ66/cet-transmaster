@@ -159,6 +159,13 @@ ${referenceFull ? `\n参考译文:\n${referenceFull}` : ''}`
         requestBody.system = SYSTEM_PROMPT
         requestBody.messages = [{ role: 'user', content: userMessages }]
         break
+      case 'xiaomi':
+        url = (baseUrl || 'https://api.xiaomimimo.com/anthropic') + '/v1/messages'
+        headers['x-api-key'] = apiKey
+        headers['anthropic-version'] = '2023-06-01'
+        requestBody.system = SYSTEM_PROMPT
+        requestBody.messages = [{ role: 'user', content: userMessages }]
+        break
       case 'ollama':
         url = (baseUrl || 'http://localhost:11434') + '/api/chat'
         requestBody.stream = false
@@ -206,7 +213,7 @@ ${referenceFull ? `\n参考译文:\n${referenceFull}` : ''}`
       let content = ''
       if (provider === 'gemini') {
         content = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-      } else if (provider === 'anthropic') {
+      } else if (provider === 'anthropic' || provider === 'xiaomi') {
         content = data.content?.[0]?.text || ''
       } else if (provider === 'ollama') {
         content = data.message?.content || ''

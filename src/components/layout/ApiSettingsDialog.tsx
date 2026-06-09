@@ -33,6 +33,7 @@ const PROVIDERS: { value: Provider; label: string; defaultModel: string; baseUrl
   { value: 'minimax', label: 'Minimax', defaultModel: 'abab6.5s-chat' },
   { value: 'qwen', label: '阿里 Qwen (通义千问)', defaultModel: 'qwen-turbo', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
   { value: 'anthropic', label: 'Anthropic (Claude)', defaultModel: 'claude-3-5-sonnet-20241022', baseUrl: 'https://api.anthropic.com' },
+  { value: 'xiaomi', label: '小米 MiMo', defaultModel: 'mimo-v2.5-pro', baseUrl: 'https://api.xiaomimimo.com/anthropic' },
   { value: 'ollama', label: 'Ollama (本地模型)', defaultModel: 'llama3.2', baseUrl: 'http://localhost:11434' },
   { value: 'custom', label: '其它 (自定义)', defaultModel: '', baseUrl: '' },
 ]
@@ -58,10 +59,11 @@ export function ApiSettingsDialog() {
     })
   }
 
-const showBaseUrl = localConfig.provider === 'openai' || 
-                        localConfig.provider === 'custom' || 
+const showBaseUrl = localConfig.provider === 'openai' ||
+                        localConfig.provider === 'custom' ||
                         localConfig.provider === 'ollama' ||
-                        localConfig.provider === 'anthropic'
+                        localConfig.provider === 'anthropic' ||
+                        localConfig.provider === 'xiaomi'
 
   const isDefault = localConfig.provider === 'default'
 
